@@ -1,310 +1,265 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Center Matching Tool</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Center Matcher Tool</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #0f172a;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px 20px;
-    color: #e2e8f0;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: #f4f5f7;
+    color: #1a1a1a;
+    padding: 2rem 1rem;
   }
-  .logo { font-size: 2rem; font-weight: 800; color: #38bdf8; letter-spacing: 1px; margin-bottom: 6px; }
-  .sub  { color: #94a3b8; font-size: 0.95rem; margin-bottom: 40px; }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 1.5rem; }
   .card {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 16px;
-    padding: 36px;
-    width: 100%;
-    max-width: 620px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  }
-  .section-title {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #64748b;
-    margin-bottom: 20px;
-  }
-  .upload-zone {
-    border: 2px dashed #334155;
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 16px;
-    position: relative;
-    background: #0f172a;
-  }
-  .upload-zone:hover, .upload-zone.drag { border-color: #38bdf8; background: #0c1a2e; }
-  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-  .upload-zone .icon { font-size: 2rem; margin-bottom: 8px; }
-  .upload-zone .label { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
-  .upload-zone .hint  { font-size: 0.8rem; color: #64748b; }
-  .upload-zone .fname { margin-top: 8px; font-size: 0.85rem; color: #38bdf8; font-weight: 500; }
-  .badge {
-    display: inline-block;
-    background: #0ea5e9;
-    color: #fff;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 20px;
-    margin-bottom: 10px;
-    letter-spacing: 1px;
-  }
-  .divider { border: none; border-top: 1px solid #1e293b; margin: 20px 0; }
-  .btn-run {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #0ea5e9, #6366f1);
-    color: white;
-    border: none;
+    background: #fff;
+    border: 1px solid #e0e0e0;
     border-radius: 10px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-    letter-spacing: 0.5px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
   }
-  .btn-run:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
-  .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
-  .loader { display: none; text-align: center; padding: 30px 0; }
-  .spinner {
-    width: 48px; height: 48px;
-    border: 4px solid #334155;
-    border-top: 4px solid #38bdf8;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 16px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loader-text { color: #94a3b8; font-size: 0.9rem; }
-  .result-box { display: none; margin-top: 28px; }
-  .result-box.show { display: block; }
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .stat-card {
-    background: #0f172a;
-    border-radius: 10px;
-    padding: 16px;
-    text-align: center;
-    border: 1px solid #1e3a5f;
-  }
-  .stat-card .val  { font-size: 1.8rem; font-weight: 800; }
-  .stat-card .lbl  { font-size: 0.72rem; color: #64748b; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
-  .stat-card.green .val { color: #4ade80; }
-  .stat-card.red   .val { color: #f87171; }
-  .stat-card.yellow .val { color: #fbbf24; }
-  .stat-card.blue  .val { color: #38bdf8; }
-  .progress-bar-wrap { background: #1e293b; border-radius: 20px; height: 10px; margin-bottom: 20px; overflow: hidden; }
-  .progress-bar { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #4ade80, #38bdf8); transition: width 1s ease; }
-  .btn-download {
-    width: 100%;
-    padding: 13px;
-    background: #16a34a;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    text-decoration: none;
-    display: block;
-    text-align: center;
-  }
-  .btn-download:hover { opacity: 0.85; }
-  .error-box {
-    background: #3b1a1a;
-    border: 1px solid #ef4444;
-    border-radius: 10px;
-    padding: 14px 18px;
-    color: #fca5a5;
-    font-size: 0.88rem;
-    margin-top: 16px;
-    display: none;
-  }
-  .error-box.show { display: block; }
-  .reset-btn {
-    background: none;
-    border: 1px solid #334155;
-    color: #94a3b8;
-    padding: 8px 20px;
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #d0d0d0;
     border-radius: 8px;
+    background: #fff;
     cursor: pointer;
-    font-size: 0.82rem;
-    margin-top: 14px;
-    width: 100%;
-    transition: all 0.2s;
+    font-size: 14px;
   }
-  .reset-btn:hover { border-color: #64748b; color: #e2e8f0; }
+  .tab-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .hint { font-size: 12px; color: #777; margin-bottom: 8px; }
+  input[type=file] {
+    width: 100%;
+    padding: 10px;
+    border: 1px dashed #bbb;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 13px;
+    background: #fafafa;
+  }
+  .file-list { font-size: 13px; color: #444; margin: 6px 0 1rem; }
+  .file-list div { padding: 4px 8px; background: #f0f0f0; border-radius: 6px; margin-bottom: 4px; }
+  button.run-btn {
+    width: 100%;
+    padding: 12px;
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .errors { color: #c0392b; font-size: 13px; margin-top: 10px; }
+  .results { margin-top: 1.5rem; }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1rem 0; }
+  .stat { background: #f7f7f7; border-radius: 8px; padding: 12px; text-align: center; }
+  .stat .num { font-size: 22px; font-weight: 700; }
+  .stat .lbl { font-size: 12px; color: #666; }
+  .stat.green .num { color: #1d9e75; }
+  .stat.red .num { color: #d85a30; }
+  .stat.yellow .num { color: #ba7517; }
+  table.per-file { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 10px; }
+  table.per-file th, table.per-file td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+  a.download-link {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 10px 18px;
+    background: #1d9e75;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .spinner {
+    display: none;
+    text-align: center;
+    padding: 1rem;
+    font-size: 14px;
+    color: #666;
+  }
 </style>
 </head>
 <body>
+<div class="container">
+  <h1>Center Matcher Tool</h1>
 
-<div class="logo">🎯 Center Matcher</div>
-<div class="sub">Innovatiview — Test Center Reconciliation Tool V11</div>
-
-<div class="card">
-  <div class="section-title">Upload Files</div>
-
-  <span class="badge">LIST A</span>
-  <div class="upload-zone" id="zone-a">
-    <input type="file" id="file_a" accept=".xlsx,.xls" onchange="showName('file_a','fname-a')"/>
-    <div class="icon">📂</div>
-    <div class="label">Drop List A here</div>
-    <div class="hint">.xlsx / .xls — Your master list</div>
-    <div class="fname" id="fname-a"></div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('single')">List A vs 1 List B</button>
+    <button class="tab-btn" onclick="switchTab('multi')">List A vs Multiple List B</button>
   </div>
 
-  <span class="badge" style="background:#6366f1;">LIST B</span>
-  <div class="upload-zone" id="zone-b">
-    <input type="file" id="file_b" accept=".xlsx,.xls" onchange="showName('file_b','fname-b')"/>
-    <div class="icon">📂</div>
-    <div class="label">Drop List B here</div>
-    <div class="hint">.xlsx / .xls — Comparison list (with State column)</div>
-    <div class="fname" id="fname-b"></div>
+  <!-- ═══════════ SINGLE B FILE TAB (purana) ═══════════ -->
+  <div id="single-tab" class="tab-content active">
+    <div class="card">
+      <form id="single-form">
+        <label>List A (master file)</label>
+        <input type="file" name="file_a" id="single-file-a" accept=".xlsx,.xls" required>
+
+        <label>List B</label>
+        <input type="file" name="file_b" id="single-file-b" accept=".xlsx,.xls" required>
+
+        <button type="submit" class="run-btn" id="single-run-btn">Run Matching</button>
+      </form>
+      <div class="spinner" id="single-spinner">Processing... please wait</div>
+      <div class="errors" id="single-errors"></div>
+      <div class="results" id="single-results"></div>
+    </div>
   </div>
 
-  <button class="btn-run" id="run-btn" onclick="runMatch()">
-    ⚡ Run Matching
-  </button>
+  <!-- ═══════════ MULTI B FILE TAB (naya) ═══════════ -->
+  <div id="multi-tab" class="tab-content">
+    <div class="card">
+      <form id="multi-form">
+        <label>List A (master file)</label>
+        <input type="file" name="file_a" id="multi-file-a" accept=".xlsx,.xls" required>
 
-  <div class="error-box" id="error-box"></div>
+        <label>List B files (multiple select karo — Ctrl/Cmd dabake)</label>
+        <div class="hint">Har file output Excel mein apne alag tab mein aayegi</div>
+        <input type="file" name="files_b" id="multi-files-b" accept=".xlsx,.xls" multiple required>
+        <div class="file-list" id="multi-file-list"></div>
 
-  <div class="loader" id="loader">
-    <div class="spinner"></div>
-    <div class="loader-text">Matching centers... thoda wait karo 🔄</div>
-  </div>
-
-  <div class="result-box" id="result-box">
-    <hr class="divider"/>
-    <div class="section-title">Match Report</div>
-    <div class="stats-grid">
-      <div class="stat-card green">
-        <div class="val" id="r-matched">—</div>
-        <div class="lbl">Matched ✅</div>
-      </div>
-      <div class="stat-card blue">
-        <div class="val" id="r-total">—</div>
-        <div class="lbl">Total Rows</div>
-      </div>
-      <div class="stat-card red">
-        <div class="val" id="r-ua">—</div>
-        <div class="lbl">Unmatched A ❌</div>
-      </div>
-      <div class="stat-card yellow">
-        <div class="val" id="r-ub">—</div>
-        <div class="lbl">Unmatched B ➕</div>
-      </div>
+        <button type="submit" class="run-btn" id="multi-run-btn">Run Matching (All B Files)</button>
+      </form>
+      <div class="spinner" id="multi-spinner">Processing... ye thoda time le sakta hai</div>
+      <div class="errors" id="multi-errors"></div>
+      <div class="results" id="multi-results"></div>
     </div>
-    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#64748b; margin-bottom:6px;">
-      <span>Match Rate</span>
-      <span id="r-rate-label">—</span>
-    </div>
-    <div class="progress-bar-wrap">
-      <div class="progress-bar" id="r-bar" style="width:0%"></div>
-    </div>
-    <a class="btn-download" id="dl-link" href="#" target="_blank">
-      ⬇️ Download Result Excel
-    </a>
-    <button class="reset-btn" onclick="resetForm()">🔄 New Match</button>
   </div>
 </div>
 
 <script>
-function showName(inputId, labelId) {
-  const f = document.getElementById(inputId).files[0];
-  document.getElementById(labelId).textContent = f ? '✅ ' + f.name : '';
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(tab + '-tab').classList.add('active');
+  event.target.classList.add('active');
 }
 
-['zone-a','zone-b'].forEach(id => {
-  const z = document.getElementById(id);
-  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('drag'); });
-  z.addEventListener('dragleave', () => z.classList.remove('drag'));
-  z.addEventListener('drop', e => {
-    e.preventDefault();
-    z.classList.remove('drag');
-    const inp = z.querySelector('input');
-    if (e.dataTransfer.files.length) {
-      inp.files = e.dataTransfer.files;
-      inp.dispatchEvent(new Event('change'));
-    }
+// ── Show selected B files list (multi tab) ─────────────────
+document.getElementById('multi-files-b').addEventListener('change', function() {
+  const listDiv = document.getElementById('multi-file-list');
+  listDiv.innerHTML = '';
+  Array.from(this.files).forEach(f => {
+    const div = document.createElement('div');
+    div.textContent = f.name;
+    listDiv.appendChild(div);
   });
 });
 
-async function runMatch() {
-  const fa = document.getElementById('file_a').files[0];
-  const fb = document.getElementById('file_b').files[0];
-  const errBox = document.getElementById('error-box');
-  errBox.className = 'error-box';
+// ── SINGLE FILE FORM SUBMIT ──────────────────────────────────
+document.getElementById('single-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('single-run-btn');
+  const spinner = document.getElementById('single-spinner');
+  const errorsDiv = document.getElementById('single-errors');
+  const resultsDiv = document.getElementById('single-results');
 
-  if (!fa || !fb) {
-    errBox.textContent = '⚠️ Dono files select karo (List A aur List B)';
-    errBox.className = 'error-box show';
-    return;
-  }
+  errorsDiv.innerHTML = '';
+  resultsDiv.innerHTML = '';
+  btn.disabled = true;
+  spinner.style.display = 'block';
 
-  document.getElementById('run-btn').disabled = true;
-  document.getElementById('loader').style.display = 'block';
-  document.getElementById('result-box').className = 'result-box';
-
-  const form = new FormData();
-  form.append('file_a', fa);
-  form.append('file_b', fb);
+  const formData = new FormData();
+  formData.append('file_a', document.getElementById('single-file-a').files[0]);
+  formData.append('file_b', document.getElementById('single-file-b').files[0]);
 
   try {
-    const res = await fetch('/run', { method: 'POST', body: form });
+    const res = await fetch('/run', { method: 'POST', body: formData });
     const data = await res.json();
-    document.getElementById('loader').style.display = 'none';
+    spinner.style.display = 'none';
+    btn.disabled = false;
 
     if (!data.success) {
-      errBox.textContent = '❌ ' + (data.errors || ['Unknown error']).join(' | ');
-      errBox.className = 'error-box show';
-      document.getElementById('run-btn').disabled = false;
+      errorsDiv.innerHTML = data.errors.join('<br>');
       return;
     }
 
-    document.getElementById('r-matched').textContent = data.matched;
-    document.getElementById('r-total').textContent   = data.total;
-    document.getElementById('r-ua').textContent      = data.unmatched_a;
-    document.getElementById('r-ub').textContent      = data.unmatched_b;
-    document.getElementById('r-rate-label').textContent = data.match_rate + '%';
-    document.getElementById('r-bar').style.width    = data.match_rate + '%';
-    document.getElementById('dl-link').href = '/download/' + data.filename;
-    document.getElementById('result-box').className = 'result-box show';
+    resultsDiv.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat green"><div class="num">${data.matched}</div><div class="lbl">Matched</div></div>
+        <div class="stat red"><div class="num">${data.unmatched_a}</div><div class="lbl">Unmatched A</div></div>
+        <div class="stat yellow"><div class="num">${data.unmatched_b}</div><div class="lbl">Unmatched B</div></div>
+      </div>
+      <p>Match Rate: <b>${data.match_rate}%</b></p>
+      <a class="download-link" href="/download/${data.filename}">⬇ Download Excel</a>
+    `;
   } catch (err) {
-    document.getElementById('loader').style.display = 'none';
-    errBox.textContent = '❌ Server error: ' + err.message;
-    errBox.className = 'error-box show';
-    document.getElementById('run-btn').disabled = false;
+    spinner.style.display = 'none';
+    btn.disabled = false;
+    errorsDiv.textContent = 'Error: ' + err.message;
   }
-}
+});
 
-function resetForm() {
-  document.getElementById('file_a').value = '';
-  document.getElementById('file_b').value = '';
-  document.getElementById('fname-a').textContent = '';
-  document.getElementById('fname-b').textContent = '';
-  document.getElementById('result-box').className = 'result-box';
-  document.getElementById('error-box').className = 'error-box';
-  document.getElementById('run-btn').disabled = false;
-}
+// ── MULTI FILE FORM SUBMIT ───────────────────────────────────
+document.getElementById('multi-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('multi-run-btn');
+  const spinner = document.getElementById('multi-spinner');
+  const errorsDiv = document.getElementById('multi-errors');
+  const resultsDiv = document.getElementById('multi-results');
+
+  errorsDiv.innerHTML = '';
+  resultsDiv.innerHTML = '';
+  btn.disabled = true;
+  spinner.style.display = 'block';
+
+  const formData = new FormData();
+  formData.append('file_a', document.getElementById('multi-file-a').files[0]);
+  const bFiles = document.getElementById('multi-files-b').files;
+  for (let i = 0; i < bFiles.length; i++) {
+    formData.append('files_b', bFiles[i]);
+  }
+
+  try {
+    const res = await fetch('/run-multi', { method: 'POST', body: formData });
+    const data = await res.json();
+    spinner.style.display = 'none';
+    btn.disabled = false;
+
+    if (!data.success) {
+      errorsDiv.innerHTML = data.errors.join('<br>');
+      return;
+    }
+
+    let perFileRows = data.per_file.map(f => `
+      <tr>
+        <td>${f.tab}</td>
+        <td>${f.matched}</td>
+        <td>${f.unmatched_a}</td>
+        <td>${f.unmatched_b}</td>
+        <td>${f.match_rate}%</td>
+      </tr>
+    `).join('');
+
+    resultsDiv.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat green"><div class="num">${data.total_matched}</div><div class="lbl">Total Matched</div></div>
+        <div class="stat red"><div class="num">${data.total_unmatched_a}</div><div class="lbl">Total Unmatched A</div></div>
+        <div class="stat yellow"><div class="num">${data.total_unmatched_b}</div><div class="lbl">Total Unmatched B</div></div>
+      </div>
+      <table class="per-file">
+        <tr><th>Tab</th><th>Matched</th><th>Unmatched A</th><th>Unmatched B</th><th>Rate</th></tr>
+        ${perFileRows}
+      </table>
+      <a class="download-link" href="/download/${data.filename}">⬇ Download Excel (${data.per_file.length} tabs)</a>
+    `;
+  } catch (err) {
+    spinner.style.display = 'none';
+    btn.disabled = false;
+    errorsDiv.textContent = 'Error: ' + err.message;
+  }
+});
 </script>
 </body>
 </html>
