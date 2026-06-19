@@ -228,7 +228,8 @@
 
   <div class="topline"><span class="dot"></span>internal tool</div>
   <h1>Center <span>matcher</span></h1>
-  <p class="subhead">List A ko List B ke saath match karo &mdash; names aur address ke fuzzy comparison se. Ek ya multiple B files daal sakte ho.</p>
+  <p class="subhead">**Match List A with List B using fuzzy comparison of names and addresses. You can upload one or multiple List B files.**
+.</p>
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="single" onclick="switchTab('single')">
@@ -245,11 +246,12 @@
 
         <div class="field">
           <div class="field-label"><span class="step-num">1</span> List A &mdash; master file</div>
-          <div class="field-hint">Voh file jiske against sab kuch match hoga</div>
+          <div class="field-hint">**This is the reference file against which all data will be matched.**
+</div>
           <label class="dropzone" id="single-dz-a">
             <div class="dz-icon"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i></div>
             <div>
-              <div class="dz-text-main" id="single-a-text">Drag karo ya click karke choose karo</div>
+              <div class="dz-text-main" id="single-a-text">Drag and drop or click to select.</div>
               <div class="dz-text-sub">.xlsx ya .xls</div>
             </div>
             <span class="dz-browse">Browse</span>
@@ -259,11 +261,13 @@
 
         <div class="field">
           <div class="field-label"><span class="step-num">2</span> List B &mdash; comparison file</div>
-          <div class="field-hint">Jisse List A match karna hai</div>
+          <div class="field-hint">**The file against which List A needs to be matched.**
+</div>
           <label class="dropzone" id="single-dz-b">
             <div class="dz-icon"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i></div>
             <div>
-              <div class="dz-text-main" id="single-b-text">Drag karo ya click karke choose karo</div>
+              <div class="dz-text-main" id="single-b-text">**Drag and drop or click to choose a file.**
+</div>
               <div class="dz-text-sub">.xlsx ya .xls</div>
             </div>
             <span class="dz-browse">Browse</span>
@@ -276,7 +280,8 @@
         </button>
       </form>
 
-      <div class="spinner-row" id="single-spinner"><span class="spin"></span> Matching chal raha hai...</div>
+      <div class="spinner-row" id="single-spinner"><span class="spin"></span> **Matching in progress...**
+</div>
       <div class="error-box" id="single-errors"></div>
 
       <div class="results" id="single-results-wrap">
@@ -292,11 +297,13 @@
 
         <div class="field">
           <div class="field-label"><span class="step-num">1</span> List A &mdash; master file</div>
-          <div class="field-hint">Voh file jiske against sab kuch match hoga</div>
+          <div class="field-hint">**The reference file against which everything will be matched.**
+</div>
           <label class="dropzone" id="multi-dz-a">
             <div class="dz-icon"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i></div>
             <div>
-              <div class="dz-text-main" id="multi-a-text">Drag karo ya click karke choose karo</div>
+              <div class="dz-text-main" id="multi-a-text">**Drag and drop or click to select a file.**
+</div>
               <div class="dz-text-sub">.xlsx ya .xls</div>
             </div>
             <span class="dz-browse">Browse</span>
@@ -306,12 +313,14 @@
 
         <div class="field">
           <div class="field-label"><span class="step-num">2</span> List B &mdash; multiple files</div>
-          <div class="field-hint">Ctrl/Cmd dabake ek saath kayi files select karo &mdash; har file output mein apne tab mein milegi</div>
+          <div class="field-hint">**Hold Ctrl (Windows) or Cmd (Mac) to select multiple files at once — each file will appear in its own tab in the output.**
+</div>
           <label class="dropzone" id="multi-dz-b">
             <div class="dz-icon"><i class="ti ti-stack-2" aria-hidden="true"></i></div>
             <div>
-              <div class="dz-text-main" id="multi-b-text">Drag karo ya click karke choose karo</div>
-              <div class="dz-text-sub">Multiple .xlsx files select ho sakti hain</div>
+              <div class="dz-text-main" id="multi-b-text">Drag and drop files here, or click to select.</div>
+              <div class="dz-text-sub">**You can select multiple `.xlsx` files.**
+</div>
             </div>
             <span class="dz-browse">Browse</span>
             <input type="file" id="multi-files-b" accept=".xlsx,.xls" multiple required>
@@ -320,11 +329,12 @@
         </div>
 
         <button type="submit" class="run-btn" id="multi-run-btn">
-          <i class="ti ti-player-play-filled" aria-hidden="true"></i> Run matching &mdash; sab B files
+          <i class="ti ti-player-play-filled" aria-hidden="true"></i> Run matching &mdash; All B files
         </button>
       </form>
 
-      <div class="spinner-row" id="multi-spinner"><span class="spin"></span> Matching chal raha hai, thoda time lagega...</div>
+      <div class="spinner-row" id="multi-spinner"><span class="spin"></span> **Matching in progress... This may take a few moments.**
+.</div>
       <div class="error-box" id="multi-errors"></div>
 
       <div class="results" id="multi-results-wrap">
