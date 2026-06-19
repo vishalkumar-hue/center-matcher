@@ -4,261 +4,497 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Center Matcher Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
-    background: #f4f5f7;
-    color: #1a1a1a;
-    padding: 2rem 1rem;
+  :root{
+    --bg: #F4F1EA;
+    --surface: #FFFFFF;
+    --surface-2: #FBF9F4;
+    --ink: #211C16;
+    --ink-soft: #6B6356;
+    --ink-faint: #A29A8A;
+    --line: #E6E0D4;
+    --accent: #D85A30;
+    --accent-deep: #993C1D;
+    --accent-soft: #FAECE7;
+    --teal: #1D9E75;
+    --teal-soft: #E1F5EE;
+    --teal-deep: #085041;
+    --red-soft: #FCEBEB;
+    --red-deep: #791F1F;
+    --amber-soft: #FAEEDA;
+    --amber-deep: #633806;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
   }
-  .container { max-width: 720px; margin: 0 auto; }
-  h1 { font-size: 22px; margin-bottom: 1.5rem; }
-  .card {
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    padding:3rem 1.25rem 5rem;
   }
-  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
-  .tab-btn {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    background: #fff;
-    cursor: pointer;
-    font-size: 14px;
+  .shell{max-width:760px;margin:0 auto}
+
+  .topline{
+    display:flex;align-items:center;gap:10px;
+    font-size:13px;color:var(--ink-faint);letter-spacing:0.04em;
+    text-transform:uppercase;margin-bottom:1rem;font-weight:500;
   }
-  .tab-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-  label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
-  .hint { font-size: 12px; color: #777; margin-bottom: 8px; }
-  input[type=file] {
-    width: 100%;
-    padding: 10px;
-    border: 1px dashed #bbb;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    font-size: 13px;
-    background: #fafafa;
+  .topline .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+  h1{
+    font-family:'Sora',sans-serif;
+    font-size:clamp(32px,5vw,42px);
+    font-weight:700;
+    letter-spacing:-0.02em;
+    line-height:1.1;
+    margin-bottom:0.5rem;
   }
-  .file-list { font-size: 13px; color: #444; margin: 6px 0 1rem; }
-  .file-list div { padding: 4px 8px; background: #f0f0f0; border-radius: 6px; margin-bottom: 4px; }
-  button.run-btn {
-    width: 100%;
-    padding: 12px;
-    background: #1a1a1a;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
+  h1 span{color:var(--accent)}
+  .subhead{
+    font-size:15px;color:var(--ink-soft);margin-bottom:2.25rem;max-width:480px;line-height:1.6;
   }
-  button.run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .errors { color: #c0392b; font-size: 13px; margin-top: 10px; }
-  .results { margin-top: 1.5rem; }
-  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1rem 0; }
-  .stat { background: #f7f7f7; border-radius: 8px; padding: 12px; text-align: center; }
-  .stat .num { font-size: 22px; font-weight: 700; }
-  .stat .lbl { font-size: 12px; color: #666; }
-  .stat.green .num { color: #1d9e75; }
-  .stat.red .num { color: #d85a30; }
-  .stat.yellow .num { color: #ba7517; }
-  table.per-file { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 10px; }
-  table.per-file th, table.per-file td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
-  a.download-link {
-    display: inline-block;
-    margin-top: 1rem;
-    padding: 10px 18px;
-    background: #1d9e75;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
+
+  .tabs{
+    display:flex;gap:6px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:14px;padding:5px;margin-bottom:1.5rem;
   }
-  .spinner {
-    display: none;
-    text-align: center;
-    padding: 1rem;
-    font-size: 14px;
-    color: #666;
+  .tab-btn{
+    flex:1;padding:11px 14px;border:none;border-radius:10px;
+    background:transparent;color:var(--ink-soft);
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:500;
+    cursor:pointer;transition:all 0.18s ease;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .tab-btn i{font-size:16px}
+  .tab-btn:hover{color:var(--ink)}
+  .tab-btn.active{
+    background:var(--ink);color:#fff;
+    box-shadow:0 2px 8px rgba(33,28,22,0.18);
+  }
+
+  .tab-content{display:none;animation:fadein 0.25s ease}
+  .tab-content.active{display:block}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    padding:2rem;
+  }
+
+  .field{margin-bottom:1.5rem}
+  .field-label{
+    display:flex;align-items:center;gap:8px;
+    font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px;
+  }
+  .field-label .step-num{
+    width:20px;height:20px;border-radius:50%;
+    background:var(--accent-soft);color:var(--accent-deep);
+    font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .field-hint{font-size:12.5px;color:var(--ink-faint);margin:2px 0 10px 28px}
+
+  .dropzone{
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius-md);
+    background:var(--surface-2);
+    padding:1.5rem 1.25rem;
+    cursor:pointer;
+    transition:all 0.18s ease;
+    display:flex;align-items:center;gap:14px;
+    position:relative;
+  }
+  .dropzone:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .dropzone.has-file{border-style:solid;border-color:var(--teal);background:var(--teal-soft)}
+  .dropzone.drag-over{border-color:var(--accent);background:var(--accent-soft)}
+  .dropzone input{
+    position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+  }
+  .dz-icon{
+    width:40px;height:40px;border-radius:10px;
+    background:var(--surface);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    color:var(--ink-faint);font-size:19px;
+  }
+  .dropzone.has-file .dz-icon{
+    background:var(--teal);color:#fff;border-color:var(--teal);
+  }
+  .dz-text-main{font-size:14px;font-weight:500;color:var(--ink)}
+  .dz-text-sub{font-size:12.5px;color:var(--ink-faint);margin-top:1px}
+  .dz-browse{
+    margin-left:auto;font-size:12.5px;font-weight:600;color:var(--accent-deep);
+    background:var(--accent-soft);padding:6px 13px;border-radius:7px;flex-shrink:0;
+  }
+
+  .file-pill-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .file-pill{
+    display:inline-flex;align-items:center;gap:7px;
+    background:var(--teal-soft);color:var(--teal-deep);
+    border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:500;
+  }
+  .file-pill i{font-size:14px}
+
+  .run-btn{
+    width:100%;padding:15px;margin-top:0.5rem;
+    background:var(--ink);color:#fff;
+    border:none;border-radius:var(--radius-md);
+    font-family:'Inter',sans-serif;font-size:15px;font-weight:600;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;
+    transition:all 0.18s ease;
+  }
+  .run-btn:hover:not(:disabled){background:var(--accent-deep);transform:translateY(-1px)}
+  .run-btn:active:not(:disabled){transform:translateY(0)}
+  .run-btn:disabled{background:var(--ink-faint);cursor:not-allowed;opacity:0.5}
+  .run-btn i{font-size:17px}
+
+  .spinner-row{
+    display:none;align-items:center;gap:10px;justify-content:center;
+    padding:1rem;font-size:13.5px;color:var(--ink-soft);
+  }
+  .spinner-row.show{display:flex}
+  .spin{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid var(--line);border-top-color:var(--accent);
+    animation:spin 0.7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .error-box{
+    display:none;margin-top:1rem;padding:12px 15px;
+    background:var(--red-soft);color:var(--red-deep);
+    border-radius:var(--radius-sm);font-size:13.5px;line-height:1.5;
+  }
+  .error-box.show{display:block}
+
+  .results{display:none;margin-top:1.75rem;padding-top:1.75rem;border-top:1px solid var(--line)}
+  .results.show{display:block}
+  .results-title{
+    font-family:'Sora',sans-serif;font-size:15px;font-weight:600;margin-bottom:1rem;
+    display:flex;align-items:center;gap:8px;
+  }
+  .results-title i{color:var(--teal);font-size:18px}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+  .stat{
+    border-radius:var(--radius-md);padding:14px 10px;text-align:center;
+  }
+  .stat.green{background:var(--teal-soft)}
+  .stat.red{background:var(--red-soft)}
+  .stat.amber{background:var(--amber-soft)}
+  .stat .num{font-family:'Sora',sans-serif;font-size:24px;font-weight:700}
+  .stat.green .num{color:var(--teal-deep)}
+  .stat.red .num{color:var(--red-deep)}
+  .stat.amber .num{color:var(--amber-deep)}
+  .stat .lbl{font-size:11.5px;color:var(--ink-soft);margin-top:3px;font-weight:500}
+
+  table.per-file{width:100%;font-size:13px;border-collapse:collapse;margin-bottom:1.25rem}
+  table.per-file th{
+    text-align:left;padding:8px 10px;font-size:11px;font-weight:600;
+    color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.03em;
+    border-bottom:1.5px solid var(--line);
+  }
+  table.per-file td{padding:9px 10px;border-bottom:1px solid var(--line);color:var(--ink)}
+  table.per-file tr:last-child td{border-bottom:none}
+  .rate-badge{
+    display:inline-block;padding:2px 8px;border-radius:6px;
+    font-size:11.5px;font-weight:600;
+  }
+
+  .download-link{
+    display:flex;align-items:center;justify-content:center;gap:9px;
+    width:100%;padding:14px;
+    background:var(--teal);color:#fff;text-decoration:none;
+    border-radius:var(--radius-md);font-size:14.5px;font-weight:600;
+    transition:all 0.18s ease;
+  }
+  .download-link:hover{background:var(--teal-deep)}
+  .download-link i{font-size:17px}
+
+  footer{
+    text-align:center;margin-top:2.5rem;font-size:12.5px;color:var(--ink-faint);
   }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>Center Matcher Tool</h1>
+<div class="shell">
+
+  <div class="topline"><span class="dot"></span>internal tool</div>
+  <h1>Center <span>matcher</span></h1>
+  <p class="subhead">List A ko List B ke saath match karo &mdash; names aur address ke fuzzy comparison se. Ek ya multiple B files daal sakte ho.</p>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('single')">List A vs 1 List B</button>
-    <button class="tab-btn" onclick="switchTab('multi')">List A vs Multiple List B</button>
+    <button class="tab-btn active" data-tab="single" onclick="switchTab('single')">
+      <i class="ti ti-file-diff" aria-hidden="true"></i> Single B file
+    </button>
+    <button class="tab-btn" data-tab="multi" onclick="switchTab('multi')">
+      <i class="ti ti-stack-2" aria-hidden="true"></i> Multiple B files
+    </button>
   </div>
 
-  <!-- ═══════════ SINGLE B FILE TAB (purana) ═══════════ -->
   <div id="single-tab" class="tab-content active">
     <div class="card">
       <form id="single-form">
-        <label>List A (master file)</label>
-        <input type="file" name="file_a" id="single-file-a" accept=".xlsx,.xls" required>
 
-        <label>List B</label>
-        <input type="file" name="file_b" id="single-file-b" accept=".xlsx,.xls" required>
+        <div class="field">
+          <div class="field-label"><span class="step-num">1</span> List A &mdash; master file</div>
+          <div class="field-hint">Voh file jiske against sab kuch match hoga</div>
+          <label class="dropzone" id="single-dz-a">
+            <div class="dz-icon"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i></div>
+            <div>
+              <div class="dz-text-main" id="single-a-text">Drag karo ya click karke choose karo</div>
+              <div class="dz-text-sub">.xlsx ya .xls</div>
+            </div>
+            <span class="dz-browse">Browse</span>
+            <input type="file" id="single-file-a" accept=".xlsx,.xls" required>
+          </label>
+        </div>
 
-        <button type="submit" class="run-btn" id="single-run-btn">Run Matching</button>
+        <div class="field">
+          <div class="field-label"><span class="step-num">2</span> List B &mdash; comparison file</div>
+          <div class="field-hint">Jisse List A match karna hai</div>
+          <label class="dropzone" id="single-dz-b">
+            <div class="dz-icon"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i></div>
+            <div>
+              <div class="dz-text-main" id="single-b-text">Drag karo ya click karke choose karo</div>
+              <div class="dz-text-sub">.xlsx ya .xls</div>
+            </div>
+            <span class="dz-browse">Browse</span>
+            <input type="file" id="single-file-b" accept=".xlsx,.xls" required>
+          </label>
+        </div>
+
+        <button type="submit" class="run-btn" id="single-run-btn">
+          <i class="ti ti-player-play-filled" aria-hidden="true"></i> Run matching
+        </button>
       </form>
-      <div class="spinner" id="single-spinner">Processing... please wait</div>
-      <div class="errors" id="single-errors"></div>
-      <div class="results" id="single-results"></div>
+
+      <div class="spinner-row" id="single-spinner"><span class="spin"></span> Matching chal raha hai...</div>
+      <div class="error-box" id="single-errors"></div>
+
+      <div class="results" id="single-results-wrap">
+        <div class="results-title"><i class="ti ti-circle-check-filled" aria-hidden="true"></i> Matching complete</div>
+        <div id="single-results"></div>
+      </div>
     </div>
   </div>
 
-  <!-- ═══════════ MULTI B FILE TAB (naya) ═══════════ -->
   <div id="multi-tab" class="tab-content">
     <div class="card">
       <form id="multi-form">
-        <label>List A (master file)</label>
-        <input type="file" name="file_a" id="multi-file-a" accept=".xlsx,.xls" required>
 
-        <label>List B files (multiple select karo — Ctrl/Cmd dabake)</label>
-        <div class="hint">Har file output Excel mein apne alag tab mein aayegi</div>
-        <input type="file" name="files_b" id="multi-files-b" accept=".xlsx,.xls" multiple required>
-        <div class="file-list" id="multi-file-list"></div>
+        <div class="field">
+          <div class="field-label"><span class="step-num">1</span> List A &mdash; master file</div>
+          <div class="field-hint">Voh file jiske against sab kuch match hoga</div>
+          <label class="dropzone" id="multi-dz-a">
+            <div class="dz-icon"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i></div>
+            <div>
+              <div class="dz-text-main" id="multi-a-text">Drag karo ya click karke choose karo</div>
+              <div class="dz-text-sub">.xlsx ya .xls</div>
+            </div>
+            <span class="dz-browse">Browse</span>
+            <input type="file" id="multi-file-a" accept=".xlsx,.xls" required>
+          </label>
+        </div>
 
-        <button type="submit" class="run-btn" id="multi-run-btn">Run Matching (All B Files)</button>
+        <div class="field">
+          <div class="field-label"><span class="step-num">2</span> List B &mdash; multiple files</div>
+          <div class="field-hint">Ctrl/Cmd dabake ek saath kayi files select karo &mdash; har file output mein apne tab mein milegi</div>
+          <label class="dropzone" id="multi-dz-b">
+            <div class="dz-icon"><i class="ti ti-stack-2" aria-hidden="true"></i></div>
+            <div>
+              <div class="dz-text-main" id="multi-b-text">Drag karo ya click karke choose karo</div>
+              <div class="dz-text-sub">Multiple .xlsx files select ho sakti hain</div>
+            </div>
+            <span class="dz-browse">Browse</span>
+            <input type="file" id="multi-files-b" accept=".xlsx,.xls" multiple required>
+          </label>
+          <div class="file-pill-list" id="multi-file-list"></div>
+        </div>
+
+        <button type="submit" class="run-btn" id="multi-run-btn">
+          <i class="ti ti-player-play-filled" aria-hidden="true"></i> Run matching &mdash; sab B files
+        </button>
       </form>
-      <div class="spinner" id="multi-spinner">Processing... ye thoda time le sakta hai</div>
-      <div class="errors" id="multi-errors"></div>
-      <div class="results" id="multi-results"></div>
+
+      <div class="spinner-row" id="multi-spinner"><span class="spin"></span> Matching chal raha hai, thoda time lagega...</div>
+      <div class="error-box" id="multi-errors"></div>
+
+      <div class="results" id="multi-results-wrap">
+        <div class="results-title"><i class="ti ti-circle-check-filled" aria-hidden="true"></i> Matching complete</div>
+        <div id="multi-results"></div>
+      </div>
     </div>
   </div>
+
+  <footer>Center Matcher Tool &mdash; internal use only</footer>
 </div>
 
 <script>
-function switchTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById(tab + '-tab').classList.add('active');
-  event.target.classList.add('active');
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===tab); });
+  document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById(tab+'-tab').classList.add('active');
 }
 
-// ── Show selected B files list (multi tab) ─────────────────
-document.getElementById('multi-files-b').addEventListener('change', function() {
-  const listDiv = document.getElementById('multi-file-list');
-  listDiv.innerHTML = '';
-  Array.from(this.files).forEach(f => {
-    const div = document.createElement('div');
-    div.textContent = f.name;
-    listDiv.appendChild(div);
+function setupDropzone(dzId, inputEl, onFiles){
+  var dz = document.getElementById(dzId);
+  dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', function(){ dz.classList.remove('drag-over'); });
+  dz.addEventListener('drop', function(e){
+    e.preventDefault(); dz.classList.remove('drag-over');
+    inputEl.files = e.dataTransfer.files;
+    onFiles(inputEl.files);
   });
+  inputEl.addEventListener('change', function(){ onFiles(inputEl.files); });
+}
+
+setupDropzone('single-dz-a', document.getElementById('single-file-a'), function(files){
+  var dz = document.getElementById('single-dz-a');
+  var t = document.getElementById('single-a-text');
+  if(files.length){ t.textContent = files[0].name; dz.classList.add('has-file'); }
+});
+setupDropzone('single-dz-b', document.getElementById('single-file-b'), function(files){
+  var dz = document.getElementById('single-dz-b');
+  var t = document.getElementById('single-b-text');
+  if(files.length){ t.textContent = files[0].name; dz.classList.add('has-file'); }
 });
 
-// ── SINGLE FILE FORM SUBMIT ──────────────────────────────────
-document.getElementById('single-form').addEventListener('submit', async function(e) {
+setupDropzone('multi-dz-a', document.getElementById('multi-file-a'), function(files){
+  var dz = document.getElementById('multi-dz-a');
+  var t = document.getElementById('multi-a-text');
+  if(files.length){ t.textContent = files[0].name; dz.classList.add('has-file'); }
+});
+setupDropzone('multi-dz-b', document.getElementById('multi-files-b'), function(files){
+  var dz = document.getElementById('multi-dz-b');
+  var t = document.getElementById('multi-b-text');
+  var listDiv = document.getElementById('multi-file-list');
+  listDiv.innerHTML = '';
+  if(files.length){
+    t.textContent = files.length + ' file' + (files.length>1?'s':'') + ' selected';
+    dz.classList.add('has-file');
+    Array.from(files).forEach(function(f){
+      var pill = document.createElement('span');
+      pill.className = 'file-pill';
+      pill.innerHTML = '<i class="ti ti-file-spreadsheet" aria-hidden="true"></i>' + f.name;
+      listDiv.appendChild(pill);
+    });
+  }
+});
+
+function rateColor(rate){
+  if(rate >= 60) return {bg:'var(--teal-soft)', fg:'var(--teal-deep)'};
+  if(rate >= 30) return {bg:'var(--amber-soft)', fg:'var(--amber-deep)'};
+  return {bg:'var(--red-soft)', fg:'var(--red-deep)'};
+}
+
+document.getElementById('single-form').addEventListener('submit', function(e){
   e.preventDefault();
-  const btn = document.getElementById('single-run-btn');
-  const spinner = document.getElementById('single-spinner');
-  const errorsDiv = document.getElementById('single-errors');
-  const resultsDiv = document.getElementById('single-results');
+  var btn = document.getElementById('single-run-btn');
+  var spinner = document.getElementById('single-spinner');
+  var errorsDiv = document.getElementById('single-errors');
+  var resultsWrap = document.getElementById('single-results-wrap');
+  var resultsDiv = document.getElementById('single-results');
 
-  errorsDiv.innerHTML = '';
-  resultsDiv.innerHTML = '';
-  btn.disabled = true;
-  spinner.style.display = 'block';
+  errorsDiv.classList.remove('show'); errorsDiv.innerHTML = '';
+  resultsWrap.classList.remove('show'); resultsDiv.innerHTML = '';
+  btn.disabled = true; spinner.classList.add('show');
 
-  const formData = new FormData();
+  var formData = new FormData();
   formData.append('file_a', document.getElementById('single-file-a').files[0]);
   formData.append('file_b', document.getElementById('single-file-b').files[0]);
 
-  try {
-    const res = await fetch('/run', { method: 'POST', body: formData });
-    const data = await res.json();
-    spinner.style.display = 'none';
-    btn.disabled = false;
-
-    if (!data.success) {
-      errorsDiv.innerHTML = data.errors.join('<br>');
-      return;
-    }
-
-    resultsDiv.innerHTML = `
-      <div class="stat-grid">
-        <div class="stat green"><div class="num">${data.matched}</div><div class="lbl">Matched</div></div>
-        <div class="stat red"><div class="num">${data.unmatched_a}</div><div class="lbl">Unmatched A</div></div>
-        <div class="stat yellow"><div class="num">${data.unmatched_b}</div><div class="lbl">Unmatched B</div></div>
-      </div>
-      <p>Match Rate: <b>${data.match_rate}%</b></p>
-      <a class="download-link" href="/download/${data.filename}">⬇ Download Excel</a>
-    `;
-  } catch (err) {
-    spinner.style.display = 'none';
-    btn.disabled = false;
-    errorsDiv.textContent = 'Error: ' + err.message;
-  }
+  fetch('/run', {method:'POST', body:formData})
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      spinner.classList.remove('show'); btn.disabled = false;
+      if(!data.success){
+        errorsDiv.innerHTML = data.errors.join('<br>');
+        errorsDiv.classList.add('show');
+        return;
+      }
+      resultsDiv.innerHTML =
+        '<div class="stat-grid">' +
+          '<div class="stat green"><div class="num">' + data.matched + '</div><div class="lbl">Matched</div></div>' +
+          '<div class="stat red"><div class="num">' + data.unmatched_a + '</div><div class="lbl">Unmatched A</div></div>' +
+          '<div class="stat amber"><div class="num">' + data.unmatched_b + '</div><div class="lbl">Unmatched B</div></div>' +
+        '</div>' +
+        '<a class="download-link" href="/download/' + data.filename + '">' +
+          '<i class="ti ti-download" aria-hidden="true"></i> Download Excel &mdash; ' + data.match_rate + '% match rate' +
+        '</a>';
+      resultsWrap.classList.add('show');
+    })
+    .catch(function(err){
+      spinner.classList.remove('show'); btn.disabled = false;
+      errorsDiv.textContent = 'Error: ' + err.message;
+      errorsDiv.classList.add('show');
+    });
 });
 
-// ── MULTI FILE FORM SUBMIT ───────────────────────────────────
-document.getElementById('multi-form').addEventListener('submit', async function(e) {
+document.getElementById('multi-form').addEventListener('submit', function(e){
   e.preventDefault();
-  const btn = document.getElementById('multi-run-btn');
-  const spinner = document.getElementById('multi-spinner');
-  const errorsDiv = document.getElementById('multi-errors');
-  const resultsDiv = document.getElementById('multi-results');
+  var btn = document.getElementById('multi-run-btn');
+  var spinner = document.getElementById('multi-spinner');
+  var errorsDiv = document.getElementById('multi-errors');
+  var resultsWrap = document.getElementById('multi-results-wrap');
+  var resultsDiv = document.getElementById('multi-results');
 
-  errorsDiv.innerHTML = '';
-  resultsDiv.innerHTML = '';
-  btn.disabled = true;
-  spinner.style.display = 'block';
+  errorsDiv.classList.remove('show'); errorsDiv.innerHTML = '';
+  resultsWrap.classList.remove('show'); resultsDiv.innerHTML = '';
+  btn.disabled = true; spinner.classList.add('show');
 
-  const formData = new FormData();
+  var formData = new FormData();
   formData.append('file_a', document.getElementById('multi-file-a').files[0]);
-  const bFiles = document.getElementById('multi-files-b').files;
-  for (let i = 0; i < bFiles.length; i++) {
-    formData.append('files_b', bFiles[i]);
-  }
+  var bFiles = document.getElementById('multi-files-b').files;
+  for(var i=0;i<bFiles.length;i++) formData.append('files_b', bFiles[i]);
 
-  try {
-    const res = await fetch('/run-multi', { method: 'POST', body: formData });
-    const data = await res.json();
-    spinner.style.display = 'none';
-    btn.disabled = false;
+  fetch('/run-multi', {method:'POST', body:formData})
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      spinner.classList.remove('show'); btn.disabled = false;
+      if(!data.success){
+        errorsDiv.innerHTML = data.errors.join('<br>');
+        errorsDiv.classList.add('show');
+        return;
+      }
+      var perFileRows = data.per_file.map(function(f){
+        var c = rateColor(f.match_rate);
+        return '<tr>' +
+          '<td style="font-weight:500">' + f.tab + '</td>' +
+          '<td>' + f.matched + '</td>' +
+          '<td>' + f.unmatched_a + '</td>' +
+          '<td>' + f.unmatched_b + '</td>' +
+          '<td><span class="rate-badge" style="background:' + c.bg + ';color:' + c.fg + '">' + f.match_rate + '%</span></td>' +
+          '</tr>';
+      }).join('');
 
-    if (!data.success) {
-      errorsDiv.innerHTML = data.errors.join('<br>');
-      return;
-    }
-
-    let perFileRows = data.per_file.map(f => `
-      <tr>
-        <td>${f.tab}</td>
-        <td>${f.matched}</td>
-        <td>${f.unmatched_a}</td>
-        <td>${f.unmatched_b}</td>
-        <td>${f.match_rate}%</td>
-      </tr>
-    `).join('');
-
-    resultsDiv.innerHTML = `
-      <div class="stat-grid">
-        <div class="stat green"><div class="num">${data.total_matched}</div><div class="lbl">Total Matched</div></div>
-        <div class="stat red"><div class="num">${data.total_unmatched_a}</div><div class="lbl">Total Unmatched A</div></div>
-        <div class="stat yellow"><div class="num">${data.total_unmatched_b}</div><div class="lbl">Total Unmatched B</div></div>
-      </div>
-      <table class="per-file">
-        <tr><th>Tab</th><th>Matched</th><th>Unmatched A</th><th>Unmatched B</th><th>Rate</th></tr>
-        ${perFileRows}
-      </table>
-      <a class="download-link" href="/download/${data.filename}">⬇ Download Excel (${data.per_file.length} tabs)</a>
-    `;
-  } catch (err) {
-    spinner.style.display = 'none';
-    btn.disabled = false;
-    errorsDiv.textContent = 'Error: ' + err.message;
-  }
+      resultsDiv.innerHTML =
+        '<div class="stat-grid">' +
+          '<div class="stat green"><div class="num">' + data.total_matched + '</div><div class="lbl">Total matched</div></div>' +
+          '<div class="stat red"><div class="num">' + data.total_unmatched_a + '</div><div class="lbl">Unmatched A</div></div>' +
+          '<div class="stat amber"><div class="num">' + data.total_unmatched_b + '</div><div class="lbl">Unmatched B</div></div>' +
+        '</div>' +
+        '<table class="per-file">' +
+          '<tr><th>Tab</th><th>Matched</th><th>Unm. A</th><th>Unm. B</th><th>Rate</th></tr>' +
+          perFileRows +
+        '</table>' +
+        '<a class="download-link" href="/download/' + data.filename + '">' +
+          '<i class="ti ti-download" aria-hidden="true"></i> Download Excel &mdash; ' + data.per_file.length + ' tabs' +
+        '</a>';
+      resultsWrap.classList.add('show');
+    })
+    .catch(function(err){
+      spinner.classList.remove('show'); btn.disabled = false;
+      errorsDiv.textContent = 'Error: ' + err.message;
+      errorsDiv.classList.add('show');
+    });
 });
 </script>
 </body>
