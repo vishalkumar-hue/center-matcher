@@ -23,7 +23,7 @@ DISTRICT_FUZZY_THRESHOLD = 0.82
 CANONICAL = [
     (r'\bgovernment\s+inter\s+col(?:lege)?\b',       'gic'),
     (r'\bgovt\.?\s+inter\s+col(?:lege)?\b',          'gic'),
-    (r'\brajkiya\s+inter\s+col(?:lege)?\b',          'gic'),
+    (r'\braj(?:kiya|keeya|akiya|akeeya|keya|kiyaa)\s+inter\s+col(?:lege)?\b', 'gic'),
     (r'\bpm\s+shri\s+(?:govt|government|rajkiya)\b', 'gic'),
     (r'\bg\.?\s*i\.?\s*c\.?\b',                      'gic'),
     (r'\bpost\s*gradu(?:ate|ation)\s*college\b',     'pgcollege'),
@@ -35,7 +35,7 @@ CANONICAL = [
     (r'\binter(?:mediate)?\s*col(?:lege)?\b',        'ic'),
     (r'\bgovernment\b',  'govt'),
     (r'\bgovt\.?\b',     'govt'),
-    (r'\brajkiya\b',     'govt'),
+    (r'\braj(?:kiya|keeya|akiya|akeeya|keya|kiyaa)\b', 'govt'),
     (r'\bbalika\b',  'girls'),
     (r'\bkanya\b',   'girls'),
     (r'\bkumari\b',  'girls'),
@@ -97,6 +97,39 @@ def clean_text(x):
     return " ".join(words).strip()
 
 
+WORD_FUZZY_THRESHOLD = 0.82  # "jubille" vs "jubilee" jaisi typos ke liye
+
+
+def _fuzzy_content_common_count(wa, wb):
+    """
+    Sirf exact word match count nahi karta -- agar A ka word aur B ka
+    koi word bahut similar hai (chhoti typo/spelling diff), usko bhi
+    common count kar leta hai. Ye "jubille" vs "jubilee" jaise real
+    data-entry typos ke liye zaroori hai, warna exact-set intersection
+    unhe kabhi match nahi karega chahe center 100% same ho.
+    """
+    content_a = [w for w in wa if len(w) > 2 and w not in STRUCTURAL_TOKENS]
+    content_b = [w for w in wb if len(w) > 2 and w not in STRUCTURAL_TOKENS]
+    used_b = set()
+    count = 0
+    for w in content_a:
+        if w in content_b and w not in used_b:
+            used_b.add(w)
+            count += 1
+            continue
+        best, best_score = None, 0.0
+        for wb_word in content_b:
+            if wb_word in used_b:
+                continue
+            score = SequenceMatcher(None, w, wb_word).ratio()
+            if score > best_score:
+                best_score, best = score, wb_word
+        if best_score >= WORD_FUZZY_THRESHOLD:
+            used_b.add(best)
+            count += 1
+    return count
+
+
 def similarity(a, b):
     if not a or not b:
         return 0
@@ -104,13 +137,12 @@ def similarity(a, b):
     s2 = int(SequenceMatcher(None, " ".join(sorted(a.split())), " ".join(sorted(b.split()))).ratio() * 100)
     wa = set(a.split())
     wb = set(b.split())
-    common = wa & wb
-    content_common = [w for w in common if len(w) > 2 and w not in STRUCTURAL_TOKENS]
+    content_common_count = _fuzzy_content_common_count(a.split(), b.split())
     s3 = 0
-    if content_common:
+    if content_common_count:
         shorter = min(len(wa), len(wb))
         if shorter > 0:
-            s3 = int(len(content_common) / shorter * 100)
+            s3 = int(content_common_count / shorter * 100)
     s4 = 0
     if len(a.split()) <= 2 or len(b.split()) <= 2:
         short = a if len(a) <= len(b) else b
