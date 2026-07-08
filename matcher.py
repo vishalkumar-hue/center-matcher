@@ -8,10 +8,17 @@ from openpyxl.utils import get_column_letter
 MATCH_THRESHOLD = 65
 COL_NAME = "TEST CENTER NAME"
 
+# Agar tumhe pata chal jaaye ki kaunsa district A vs B mein alag likha jaata hai,
+# to yahan explicit alias daal dena -- ye sabse pehle try hota hai.
 DISTRICT_ALIASES = {
     "KANPUR NAGAR": "KANPUR",
     "KANPUR DEHAT": "KANPUR DEHAT",
 }
+
+# Fuzzy district fallback ke liye threshold (0-1). 0.82 kaafi safe hai,
+# isse chhoti spelling/spacing difference match ho jaayegi lekin
+# alag districts aapas mein nahi milenge.
+DISTRICT_FUZZY_THRESHOLD = 0.82
 
 CANONICAL = [
     (r'\bgovernment\s+inter\s+col(?:lege)?\b',       'gic'),
@@ -80,7 +87,7 @@ STRUCTURAL_TOKENS = {'gic', 'ic', 'govt', 'pgcollege', 'pg', 'srsc', 'ps',
 
 def clean_text(x):
     x = str(x).lower()
-    x = re.sub(r'\(?\s*block[-\s]*([a-z0-9])\s*\)?', r' blk\1 ', x)
+    x = re.sub(r'\(?\s*block[-\s]*([a-z0-9]+)\s*\)?', r' blk\1 ', x)
     x = re.sub(r'(?<!\w)([a-z])\.\s*([a-z])\.\s*([a-z])\.?(?!\w)', r'\1\2\3', x)
     x = re.sub(r'(?<!\w)([a-z])\.\s*([a-z])\.?(?!\w)', r'\1\2', x)
     x = re.sub(r'[^a-z0-9 ]', ' ', x)
@@ -122,8 +129,53 @@ def similarity(a, b):
 
 
 def normalize_district(d):
+    """
+    Pehle se: sirf upper() + strip() hota tha, jisse chhoti si
+    punctuation/space/typo difference (A vs B file) ke wajah se
+    district string kabhi exact match nahi hoti thi -> group hi
+    nahi milta -> ZERO candidates generate hote the poori file mein.
+
+    Fix: punctuation hata do, multiple spaces collapse karo, common
+    suffix words normalize karo, phir alias lookup karo.
+    """
     d = str(d).upper().strip()
+    d = re.sub(r'[.\-_/,()]', ' ', d)      # punctuation ko space se replace
+    d = re.sub(r'\bDISTT\.?\b', '', d)     # "DISTT" jaisa filler hata do
+    d = re.sub(r'\bDISTRICT\b', '', d)
+    d = re.sub(r'\s+', ' ', d).strip()     # multiple/extra spaces collapse
     return DISTRICT_ALIASES.get(d, d)
+
+
+class DistrictMatcher:
+    """
+    Exact district match na milne par closest existing district
+    (B side) dhoondh leta hai, taaki chhoti si spelling/spacing
+    difference se pura match zero na ho jaaye. Result cache hota
+    hai taaki baar baar recompute na ho.
+    """
+    def __init__(self, grouped, threshold=DISTRICT_FUZZY_THRESHOLD):
+        self.grouped = grouped
+        self.threshold = threshold
+        self.cache = {}
+        self.unmatched_districts = set()
+
+    def get_group(self, dist):
+        if dist in self.grouped.groups:
+            return self.grouped.get_group(dist)
+        if dist in self.cache:
+            cand = self.cache[dist]
+            return self.grouped.get_group(cand) if cand else None
+        best, best_score = None, 0.0
+        for cand in self.grouped.groups.keys():
+            score = SequenceMatcher(None, dist, cand).ratio()
+            if score > best_score:
+                best_score, best = score, cand
+        if best_score >= self.threshold:
+            self.cache[dist] = best
+            return self.grouped.get_group(best)
+        self.cache[dist] = None
+        self.unmatched_districts.add(dist)
+        return None
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -150,11 +202,12 @@ def run_matching(file_a_path, file_b_path, output_path):
     df_b_filtered["_dist"] = df_b_filtered[COL_B_DIST].apply(normalize_district)
 
     b_grouped = df_b_filtered.groupby("_dist")
+    dmatch = DistrictMatcher(b_grouped)
 
     candidates_all = []
     for idx_a, row_a in df_a.iterrows():
-        if row_a["_dist"] in b_grouped.groups:
-            group = b_grouped.get_group(row_a["_dist"])
+        group = dmatch.get_group(row_a["_dist"])
+        if group is not None:
             for idx_b, row_b in group.iterrows():
                 score = similarity(row_a["_name"], row_b["_name"])
                 if score >= MATCH_THRESHOLD:
@@ -177,8 +230,8 @@ def run_matching(file_a_path, file_b_path, output_path):
             matched_rows.append(a_cols + b_cols + [score, "MATCHED"])
         else:
             best_score = 0
-            if row_a["_dist"] in b_grouped.groups:
-                group = b_grouped.get_group(row_a["_dist"])
+            group = dmatch.get_group(row_a["_dist"])
+            if group is not None:
                 for idx_b, row_b in group.iterrows():
                     s = similarity(row_a["_name"], row_b["_name"])
                     if s > best_score:
@@ -234,6 +287,7 @@ def run_matching(file_a_path, file_b_path, output_path):
         "unmatched_a": unmatched_a_cnt,
         "unmatched_b": unmatched_b_cnt,
         "match_rate": match_rate,
+        "unmatched_districts": sorted(dmatch.unmatched_districts),
     }
 
 
@@ -261,6 +315,7 @@ def run_matching_multi(file_a_path, file_b_paths_with_names, output_path):
 
     sheet_results = {}
     per_file_stats = []
+    all_unmatched_districts = set()
 
     for tab_name, file_b_path in file_b_paths_with_names:
         df_b = pd.read_excel(file_b_path)
@@ -296,10 +351,12 @@ def run_matching_multi(file_a_path, file_b_paths_with_names, output_path):
             continue
 
         b_grouped = df_b.groupby("_dist")
+        dmatch = DistrictMatcher(b_grouped)
+
         candidates_all = []
         for idx_a, row_a in df_a_f.iterrows():
-            if row_a["_dist"] in b_grouped.groups:
-                group = b_grouped.get_group(row_a["_dist"])
+            group = dmatch.get_group(row_a["_dist"])
+            if group is not None:
                 for idx_b, row_b in group.iterrows():
                     score = similarity(row_a["_name"], row_b["_name"])
                     if score >= MATCH_THRESHOLD:
@@ -326,8 +383,8 @@ def run_matching_multi(file_a_path, file_b_paths_with_names, output_path):
                 rows.append(a_cols + b_cols + [score, "MATCHED"])
             else:
                 best_score = 0
-                if row_a["_dist"] in b_grouped.groups:
-                    group = b_grouped.get_group(row_a["_dist"])
+                group = dmatch.get_group(row_a["_dist"])
+                if group is not None:
                     for idx_b, row_b in group.iterrows():
                         s = similarity(row_a["_name"], row_b["_name"])
                         if s > best_score:
@@ -350,6 +407,7 @@ def run_matching_multi(file_a_path, file_b_paths_with_names, output_path):
             "unmatched_b": int(ub),
             "match_rate": round(m / max(m + ua, 1) * 100, 1)
         })
+        all_unmatched_districts |= dmatch.unmatched_districts
 
     GREEN  = PatternFill("solid", fgColor="C6EFCE")
     RED    = PatternFill("solid", fgColor="FFC7CE")
@@ -402,4 +460,5 @@ def run_matching_multi(file_a_path, file_b_paths_with_names, output_path):
         "total_matched": total_matched,
         "total_unmatched_a": total_unmatched_a,
         "total_unmatched_b": total_unmatched_b,
+        "unmatched_districts": sorted(all_unmatched_districts),
     }
