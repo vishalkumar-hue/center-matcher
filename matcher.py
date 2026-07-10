@@ -8,34 +8,33 @@ from openpyxl.utils import get_column_letter
 MATCH_THRESHOLD = 65
 COL_NAME = "TEST CENTER NAME"
 
-# Agar tumhe pata chal jaaye ki kaunsa district A vs B mein alag likha jaata hai,
-# to yahan explicit alias daal dena -- ye sabse pehle try hota hai.
 DISTRICT_ALIASES = {
     "KANPUR NAGAR": "KANPUR",
     "KANPUR DEHAT": "KANPUR DEHAT",
 }
-
-# Fuzzy district fallback ke liye threshold (0-1). 0.82 kaafi safe hai,
-# isse chhoti spelling/spacing difference match ho jaayegi lekin
-# alag districts aapas mein nahi milenge.
 DISTRICT_FUZZY_THRESHOLD = 0.82
 
+# ---- FIX 2: gic/ggic ab decompose hote hain "govt ic" / "govt girls ic" mein,
+# taaki "G.I.C." abbreviation aur "Government Inter College" full-form
+# hamesha SAME normalized tokens produce karein, chahe original text mein
+# jo bhi form likha ho.
 CANONICAL = [
-    (r'\bgovernment\s+inter\s+col(?:lege)?\b',       'gic'),
-    (r'\bgovt\.?\s+inter\s+col(?:lege)?\b',          'gic'),
-    (r'\braj(?:kiya|keeya|akiya|akeeya|keya|kiyaa)\s+inter\s+col(?:lege)?\b', 'gic'),
-    (r'\bpm\s+shri\s+(?:govt|government|rajkiya)\b', 'gic'),
-    (r'\bg\.?\s*i\.?\s*c\.?\b',                      'gic'),
-    (r'\bpost\s*gradu(?:ate|ation)\s*college\b',     'pgcollege'),
-    (r'\bdegree\s*college\b',                        'pgcollege'),
-    (r'\bmahavidyalaya\b',                           'pgcollege'),
-    (r'\bsnatakottar\s*(?:college)?\b',              'pgcollege'),
-    (r'\bsnatakor\s*(?:college)?\b',                 'pgcollege'),
-    (r'\bpg\s*college\b',                            'pgcollege'),
-    (r'\binter(?:mediate)?\s*col(?:lege)?\b',        'ic'),
+    (r'\bgovernment\s+inter\s+col(?:lege)?\b',       'govt ic'),
+    (r'\bgovt\.?\s+inter\s+col(?:lege)?\b',          'govt ic'),
+    (r'\braj(?:kiya|keeya|akiya|akeeya|keya|kiyaa|kiye|kiyay)\s+inter\s+col(?:lege)?\b', 'govt ic'),
+    (r'\bpm\s+shri\s+(?:govt|government|rajkiya)\b', 'govt'),
+    (r'\bg\s*g\s*i\s*c\b',                           'govt girls ic'),   # GGIC (merged acronym)
+    (r'\bg\s*i\s*c\b',                                'govt ic'),        # GIC (merged acronym)
+    (r'\bpost\s*gradu(?:ate|ation)\s*col(?:lege)?\b', 'pgcollege'),
+    (r'\bdegree\s*col(?:lege)?\b',                    'pgcollege'),
+    (r'\bmahavidyalaya\b',                            'pgcollege'),
+    (r'\bsnatakottar\s*(?:col(?:lege)?)?\b',          'pgcollege'),
+    (r'\bsnatakor\s*(?:col(?:lege)?)?\b',             'pgcollege'),
+    (r'\bpg\s*col(?:lege)?\b',                        'pgcollege'),
+    (r'\binter(?:mediate)?\s*col(?:lege)?\b',         'ic'),
     (r'\bgovernment\b',  'govt'),
     (r'\bgovt\.?\b',     'govt'),
-    (r'\braj(?:kiya|keeya|akiya|akeeya|keya|kiyaa)\b', 'govt'),
+    (r'\braj(?:kiya|keeya|akiya|akeeya|keya|kiyaa|kiye|kiyay)\b', 'govt'),
     (r'\bbalika\b',  'girls'),
     (r'\bkanya\b',   'girls'),
     (r'\bkumari\b',  'girls'),
@@ -44,13 +43,13 @@ CANONICAL = [
     (r'\bbalak\b',   'boys'),
     (r'\bvidyalayam?\b', 'school'),
     (r'\bvidyalay\b',    'school'),
-    (r'\bd\s*\.?\s*a\s*\.?\s*v\s*\.?\b',  'dav'),
+    (r'\bd\s*a\s*v\b',  'dav'),
     (r'\bpost\s*gradu(?:ate|ation)\b',  'pg'),
-    (r'\bp\.?\s*g\.?\b',               'pg'),
+    (r'\bp\s*g\b',               'pg'),
     (r'\b(?:senior|higher)\s*secondary\b', 'srsc'),
     (r'\bsr\.?\s*sec\.?\b',               'srsc'),
     (r'\bss\s*school\b',                  'srsc'),
-    (r'\bf\.?\s*e\.?\s*t\.?\b',  'fet'),
+    (r'\bf\s*e\s*t\b',  'fet'),
     (r'\badarsh\b',  'ideal'),
     (r'\bsmarak\b',  'memorial'),
     (r'\bsmriti\b',  'memorial'),
@@ -67,6 +66,9 @@ CANONICAL = [
     (r'\bco\s*ed\b',          ''),
     (r'\bpm\s+shri\b',        ''),
     (r'\bautonomous\b',       ''),
+    # FIX 4: "+2" / "plus two" -> ek hi token
+    (r'\bplus\s*two\b', 'p2'),
+    (r'\+\s*2\b',       'p2'),
 ]
 
 NOISE = {
@@ -78,36 +80,102 @@ NOISE = {
     'basti', 'saharanpur', 'mirzapur', 'banda',
 }
 
-STRUCTURAL_TOKENS = {'gic', 'ic', 'govt', 'pgcollege', 'pg', 'srsc', 'ps',
-                     'kv', 'dav', 'school', 'girls', 'boys', 'shri', 'ideal',
-                     'memorial', 'vidyapith', 'fet', 'women',
+STRUCTURAL_TOKENS = {'ic', 'govt', 'pgcollege', 'pg', 'srsc', 'ps',
+                     'kv', 'dav', 'school', 'college', 'girls', 'boys', 'shri', 'ideal',
+                     'memorial', 'vidyapith', 'fet', 'women', 'p2',
                      'blka', 'blkb', 'blkc', 'blkd', 'blke', 'blkf',
                      'blk1', 'blk2', 'blk3', 'blk4', 'blk5'}
+
+# FIX 6: A/B/C style block labels aur 1/2/3 style dono ek hi cheez hote
+# hain (List A "BLOCK-A" likhta hai, List B "BLOCK-1" likhta hai). Isse
+# normalize karke same token pe le aate hain taaki block-match bonus
+# dono naming scheme mein kaam kare.
+BLOCK_ALIAS = {'blka': 'blk1', 'blkb': 'blk2', 'blkc': 'blk3',
+               'blkd': 'blk4', 'blke': 'blk5', 'blkf': 'blk6'}
+
+
+def _normalize_block_tokens(words):
+    return [BLOCK_ALIAS.get(w, w) for w in words]
+
+# FIX 3: Fuzzy vocabulary snap -- common data-entry typos jaise
+# "mahavidyala", "colege", "uccha" ko unke sahi canonical spelling
+# se map kar deta hai, taaki CANONICAL phrase regex unhe pakad sake.
+# Ye endless "har typo ke liye naya regex" likhne se behtar hai --
+# generalize karta hai kisi bhi chhoti spelling mistake ke liye.
+VOCAB_WORDS = [
+    'mahavidyalaya', 'vidyalaya', 'uchcha', 'college', 'inter',
+    'intermediate', 'secondary', 'vidyapeeth', 'snatakottar', 'vidyapith',
+    'government', 'rajkiya', 'balika', 'kanya', 'mahila', 'smarak',
+    'adarsh', 'public', 'school', 'vidyapeetha', 'mahavidyala',
+]
+VOCAB_FUZZY_THRESHOLD = 0.82
+
+
+def _fuzzy_snap_word(w):
+    if len(w) < 5:
+        return w
+    best, best_score = None, 0.0
+    for v in VOCAB_WORDS:
+        if abs(len(v) - len(w)) > 3:
+            continue
+        score = SequenceMatcher(None, w, v).ratio()
+        if score > best_score:
+            best_score, best = score, v
+    if best_score >= VOCAB_FUZZY_THRESHOLD and best != w:
+        # 'mahavidyala' khud VOCAB mein hai as an alias -> asli target 'mahavidyalaya'
+        return 'mahavidyalaya' if best == 'mahavidyala' else best
+    return w
+
+
+# ---- FIX 1: acronym merge ab dot AND space dono se separated single-letter
+# tokens ko merge karta hai (e.g. "N A S" ya "N.A.S." dono "nas" ban jaate
+# hain). Pehle sirf dotted version handle hoti thi, isliye "N A S COLLEGE"
+# (bina dot ke) kabhi merge nahi hota tha aur match fail ho jaata tha.
+def _merge_acronyms(x):
+    x = re.sub(r'\.', '. ', x)
+    x = re.sub(r'\s+', ' ', x).strip()
+    tokens = x.split(' ') if x else []
+    out = []
+    buf = []
+
+    def flush():
+        if len(buf) >= 2:
+            out.append(''.join(buf))
+        elif len(buf) == 1:
+            out.append(buf[0])
+        buf.clear()
+
+    for tok in tokens:
+        core = tok.rstrip('.')
+        if len(core) == 1 and core.isalpha():
+            buf.append(core)
+        else:
+            flush()
+            out.append(core if tok.endswith('.') else tok)
+    flush()
+    return ' '.join(out)
 
 
 def clean_text(x):
     x = str(x).lower()
     x = re.sub(r'\(?\s*block[-\s]*([a-z0-9]+)\s*\)?', r' blk\1 ', x)
-    x = re.sub(r'(?<!\w)([a-z])\.\s*([a-z])\.\s*([a-z])\.?(?!\w)', r'\1\2\3', x)
-    x = re.sub(r'(?<!\w)([a-z])\.\s*([a-z])\.?(?!\w)', r'\1\2', x)
+    x = _merge_acronyms(x)
     x = re.sub(r'[^a-z0-9 ]', ' ', x)
+    x = re.sub(r'\s+', ' ', x).strip()
+    # fuzzy-snap typo'd words BEFORE phrase-level canonical regex runs
+    x = ' '.join(_fuzzy_snap_word(w) for w in x.split())
     for pattern, replacement in CANONICAL:
         x = re.sub(pattern, replacement, x)
+    x = re.sub(r'\s+', ' ', x).strip()
     words = [w for w in x.split() if w not in NOISE and len(w) > 0]
+    words = _normalize_block_tokens(words)
     return " ".join(words).strip()
 
 
-WORD_FUZZY_THRESHOLD = 0.82  # "jubille" vs "jubilee" jaisi typos ke liye
+WORD_FUZZY_THRESHOLD = 0.82
 
 
 def _fuzzy_content_common_count(wa, wb):
-    """
-    Sirf exact word match count nahi karta -- agar A ka word aur B ka
-    koi word bahut similar hai (chhoti typo/spelling diff), usko bhi
-    common count kar leta hai. Ye "jubille" vs "jubilee" jaise real
-    data-entry typos ke liye zaroori hai, warna exact-set intersection
-    unhe kabhi match nahi karega chahe center 100% same ho.
-    """
     content_a = [w for w in wa if len(w) > 2 and w not in STRUCTURAL_TOKENS]
     content_b = [w for w in wb if len(w) > 2 and w not in STRUCTURAL_TOKENS]
     used_b = set()
@@ -130,17 +198,68 @@ def _fuzzy_content_common_count(wa, wb):
     return count
 
 
+def _containment_score(a_words, b_words):
+    """
+    FIX 5: Jab ek naam doosre ke andar word-sequence ke roop mein
+    poora contained hai (e.g. "gic" vs "gic bahraich"), purana formula
+    (character-level SequenceMatcher ratio) length difference ki wajah se
+    bahut kam score deta tha -- chahe match 100% sahi ho. Ye naya word-level
+    containment check us case ko fairly zyada score deta hai.
+    """
+    if not a_words or not b_words:
+        return 0
+    short, long_ = (a_words, b_words) if len(a_words) <= len(b_words) else (b_words, a_words)
+    # check short is a subsequence of long_ (order preserved)
+    it = iter(long_)
+    if all(w in it for w in short):
+        ratio = len(short) / len(long_)
+        return int(50 + 50 * ratio)
+    return 0
+
+
+# FIX 8: Bahut saare college naam ek taraf poora likhe hote hain
+# ("SHRI SANATAN DHARAM", "RAJA BALWANT SINGH") aur doosri taraf sirf
+# initials ke roop mein ("SSD", "RBS"). Ye koi typo nahi hai -- ye ek
+# legitimate short-form hai jo bahut common hai UP govt college naamo
+# mein. Ye function check karta hai ki koi chhota acronym-jaisa word
+# (2-6 letters) doosre naam ke kisi lagatar (contiguous) words ke
+# pehle-akshar se match karta hai ya nahi.
+def _initials_match(a_words, b_words):
+    def check(acronym_side, full_side):
+        for w in acronym_side:
+            if not (2 <= len(w) <= 6) or not w.isalpha() or w in STRUCTURAL_TOKENS:
+                continue
+            n = len(w)
+            for i in range(len(full_side) - n + 1):
+                window = full_side[i:i + n]
+                if any(len(t) == 0 for t in window):
+                    continue
+                initials = ''.join(t[0] for t in window)
+                if initials == w:
+                    return True
+        return False
+    return check(a_words, b_words) or check(b_words, a_words)
+
+
 def similarity(a, b):
     if not a or not b:
         return 0
     s1 = int(SequenceMatcher(None, a, b).ratio() * 100)
     s2 = int(SequenceMatcher(None, " ".join(sorted(a.split())), " ".join(sorted(b.split()))).ratio() * 100)
-    wa = set(a.split())
-    wb = set(b.split())
-    content_common_count = _fuzzy_content_common_count(a.split(), b.split())
+    a_words = a.split()
+    b_words = b.split()
+    content_a_n = len([w for w in a_words if len(w) > 2 and w not in STRUCTURAL_TOKENS])
+    content_b_n = len([w for w in b_words if len(w) > 2 and w not in STRUCTURAL_TOKENS])
+    content_common_count = _fuzzy_content_common_count(a_words, b_words)
     s3 = 0
     if content_common_count:
-        shorter = min(len(wa), len(wb))
+        # FIX 7: denominator ab sirf CONTENT words ka count hai (structural
+        # tokens jaise 'ic'/'govt'/'college' exclude), na ki poore words ka.
+        # Isse abbreviation-vs-full-name pairs jaise "R B S College" vs
+        # "Raja Balwant Singh (RBS) Inter College" sahi se match hote hain --
+        # pehle poore word count denominator mein hone se score bahut dilute
+        # ho jaata tha.
+        shorter = min(content_a_n, content_b_n)
         if shorter > 0:
             s3 = int(content_common_count / shorter * 100)
     s4 = 0
@@ -149,7 +268,10 @@ def similarity(a, b):
         long_ = b if len(a) <= len(b) else a
         if short and short in long_:
             s4 = int(SequenceMatcher(None, short, long_).ratio() * 100)
-    raw = max(s1, s2, s3, s4)
+    s5 = _containment_score(a.split(), b.split())
+    raw = max(s1, s2, s3, s4, s5)
+    if raw < 80 and _initials_match(a_words, b_words):
+        raw = max(raw, 80)
     blk_a = {w for w in a.split() if w.startswith('blk')}
     blk_b = {w for w in b.split() if w.startswith('blk')}
     if blk_a and blk_b:
@@ -161,20 +283,11 @@ def similarity(a, b):
 
 
 def normalize_district(d):
-    """
-    Pehle se: sirf upper() + strip() hota tha, jisse chhoti si
-    punctuation/space/typo difference (A vs B file) ke wajah se
-    district string kabhi exact match nahi hoti thi -> group hi
-    nahi milta -> ZERO candidates generate hote the poori file mein.
-
-    Fix: punctuation hata do, multiple spaces collapse karo, common
-    suffix words normalize karo, phir alias lookup karo.
-    """
     d = str(d).upper().strip()
-    d = re.sub(r'[.\-_/,()]', ' ', d)      # punctuation ko space se replace
-    d = re.sub(r'\bDISTT\.?\b', '', d)     # "DISTT" jaisa filler hata do
+    d = re.sub(r'[.\-_/,()]', ' ', d)
+    d = re.sub(r'\bDISTT\.?\b', '', d)
     d = re.sub(r'\bDISTRICT\b', '', d)
-    d = re.sub(r'\s+', ' ', d).strip()     # multiple/extra spaces collapse
+    d = re.sub(r'\s+', ' ', d).strip()
     return DISTRICT_ALIASES.get(d, d)
 
 
